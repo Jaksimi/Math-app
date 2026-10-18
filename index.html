@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>접선과 현이 이루는 각 탐구 어플리케이션</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f8fafc;
+            user-select: none;
+        }
+        canvas {
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-gray-800">
+
+    <!-- 상단 헤더 -->
+    <header class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between shadow-lg z-20">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500 rounded-lg text-slate-900 font-extrabold">
+                <i class="fa-solid fa-circle-dot text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-extrabold leading-tight tracking-wide flex items-center gap-2">
+                    접선과 현이 이루는 각의 성질 탐구
+                    <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-normal border border-emerald-500/30">중3 수학</span>
+                </h1>
+                <p class="text-xs text-slate-400">원 위의 <b>점 E</b> 또는 <b>점 D</b>를 움직여 두 각의 크기 관계를 탐구해 보세요.</p>
+            </div>
+        </div>
+        
+        <!-- 상단 액션 버튼들 -->
+        <div class="flex items-center gap-2">
+            <button id="btnAnimateE" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-2 rounded-lg font-semibold transition flex items-center gap-1.5 shadow-md">
+                <i class="fa-solid fa-play" id="animIcon"></i> <span id="animText">점 E 자동 이동</span>
+            </button>
+            <button id="btnToggleAngles" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-2 rounded-lg font-semibold transition flex items-center gap-1.5 shadow-md">
+                <i class="fa-solid fa-eye"></i> <span id="toggleText">각도 수치 숨기기</span>
+            </button>
+            <button id="btnReset" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-2 rounded-lg font-semibold transition flex items-center gap-1.5 shadow-md">
+                <i class="fa-solid fa-rotate-right"></i> 위치 초기화
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 탐구 영역 -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+        <!-- 왼쪽: 동적 기하 캔버스 영역 -->
+        <section class="flex-1 bg-white flex flex-col relative border-r border-slate-200">
+            <!-- 캔버스 모드 및 안내 바 -->
+            <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center text-xs">
+                <div class="flex items-center gap-4 font-semibold">
+                    <span class="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 원주각: ∠DEC
+                    </span>
+                    <span class="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 접현각: ∠DCF
+                    </span>
+                </div>
+                <div class="text-slate-500 flex items-center gap-2">
+                    <i class="fa-solid fa-hand-pointer text-indigo-500 animate-bounce"></i>
+                    <span>원 위의 <b>점 E</b> 또는 <b>점 D</b>를 드래그해보세요.</span>
+                </div>
+            </div>
+
+            <!-- 캔버스 컨테이너 -->
+            <div id="canvasContainer" class="flex-1 w-full h-full relative overflow-hidden bg-slate-900/5">
+                <canvas id="geoCanvas" class="w-full h-full cursor-crosshair"></canvas>
+                
+                <!-- 조작 힌트 Overlay -->
+                <div class="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur-sm text-white px-3.5 py-2 rounded-xl text-xs flex items-center gap-3 shadow-lg border border-white/10">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-full bg-emerald-400 border-2 border-white inline-block"></span>
+                        <span>드래그 가능 점 (E, D)</span>
+                    </div>
+                    <div class="h-3 w-px bg-white/20"></div>
+                    <div class="flex items-center gap-1.5 text-amber-300">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>점 F는 접점 C의 오른쪽에 고정 위치합니다!</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 오른쪽: 실시간 측정 및 수학 탐구 패널 -->
+        <section class="w-full lg:w-96 bg-slate-50 p-5 flex flex-col gap-5 overflow-y-auto border-l border-slate-200 shadow-inner">
+            
+            <!-- 실시간 각도 비교 카드 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <span>실시간 각도 측정</span>
+                    <i class="fa-solid fa-chart-simple text-slate-400"></i>
+                </h2>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- 원주각 카드 (텍스트 수정: 각 DEC) -->
+                    <div class="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-center">
+                        <div class="text-xs font-bold text-emerald-800 mb-0.5">원주각 (∠DEC)</div>
+                        <div id="angleEVal" class="text-2xl font-black text-emerald-600">79.99°</div>
+                        <div class="text-[10px] text-emerald-600/80 font-medium mt-1">호 CD에 대한 원주각</div>
+                    </div>
+
+                    <!-- 접현각 카드 (텍스트 수정: 각 DCF) -->
+                    <div class="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-center">
+                        <div class="text-xs font-bold text-emerald-800 mb-0.5">접현각 (∠DCF)</div>
+                        <div id="angleCVal" class="text-2xl font-black text-emerald-600">79.99°</div>
+                        <div class="text-[10px] text-emerald-600/80 font-medium mt-1">접선 j와 현 CD 사이 각</div>
+                    </div>
+                </div>
+
+                <!-- 각도 비교 관찰 창 -->
+                <div id="statusBox" class="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-center transition-all">
+                    <p class="text-xs font-extrabold text-indigo-900 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-circle-check text-indigo-600"></i>
+                        <span>∠DEC = ∠DCF (두 각의 크기가 동일함)</span>
+                    </p>
+                    <p id="diffText" class="text-[11px] text-indigo-600 mt-0.5">차이: <b class="text-indigo-800">0.00°</b></p>
+                </div>
+            </div>
+
+            <!-- 학생용 탐구 질문 모듈 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                    <span>수학 탐구 발문 (수업 활용)</span>
+                    <i class="fa-solid fa-circle-question text-indigo-500"></i>
+                </h2>
+
+                <div class="space-y-2.5 text-xs">
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+                        <p class="font-bold text-slate-700 mb-1">Q1. 점 E를 원 위에서 자유롭게 움직일 때</p>
+                        <p class="text-slate-600 text-[11px] leading-relaxed">
+                            원주각 ∠DEC의 크기는 어떻게 변하나요? 그리고 접선과 현이 이루는 각 ∠DCF와의 관계는 어떠한가요?
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+                        <p class="font-bold text-slate-700 mb-1">Q2. 점 D를 움직여 호 CD의 크기를 바꿀 때</p>
+                        <p class="text-slate-600 text-[11px] leading-relaxed">
+                            점 D의 위치가 변하면 두 색칠된 각의 크기는 각각 어떻게 변하고, 두 각은 여전히 서로 같은가요?
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 핵심 개념 및 수학적 정리 패널 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-2 text-xs">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-book text-emerald-500"></i> 핵심 기하 성질 정리
+                </h2>
+                <div class="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-900 leading-relaxed space-y-1">
+                    <p class="font-bold text-emerald-800">📌 접선과 현이 이루는 각의 성질</p>
+                    <p class="text-[11px]">
+                        원의 접선과 그 접점을 지나가는 현이 이루는 각의 크기는, 그 각의 내부에 있는 호에 대한 <b>원주각의 크기와 같습니다.</b>
+                    </p>
+                    <p class="text-[12px] font-bold text-emerald-700 pt-1 text-center">
+                        ∠DCF = ∠DEC
+                    </p>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('geoCanvas');
+            const ctx = canvas.getContext('2d');
+            const container = document.getElementById('canvasContainer');
+
+            // 캔버스 크기 맞춤
+            function resizeCanvas() {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                draw();
+            }
+
+            // 기하 도형 요소 상태 정의
+            const state = {
+                A: { x: 0, y: 0, r: 120 }, // 원의 중심 A
+                C: { x: 0, y: 0, angle: Math.PI / 2 }, // 접점 C (원 아래쪽)
+                D: { x: 0, y: 0, angle: -Math.PI / 3.2 }, // 원 위의 점 D (움직임 가능)
+                E: { x: 0, y: 0, angle: Math.PI * 0.92 }, // 원 위의 가변 점 E (움직임 가능)
+                F: { x: 0, y: 0, dist: 160 }, // 접선 j 위의 점 F (C의 오른쪽 위치)
+                showValue: true,
+                isAnimating: false,
+                activePoint: null
+            };
+
+            // 기하 좌표 초기 설정
+            function initGeometry() {
+                const cx = canvas.width / 2 - 20;
+                const cy = canvas.height / 2 - 20;
+                state.A.x = cx;
+                state.A.y = cy;
+                state.A.r = Math.min(canvas.width, canvas.height) * 0.22;
+
+                updatePointCoordinates();
+            }
+
+            // 각 각도 지점 좌표 연산
+            function updatePointCoordinates() {
+                const { A, C, D, E } = state;
+
+                // 점 C 좌표 (원의 중심 A 기준 원주 하단)
+                C.x = A.x + A.r * Math.cos(C.angle);
+                C.y = A.y + A.r * Math.sin(C.angle);
+
+                // 점 D 좌표
+                D.x = A.x + A.r * Math.cos(D.angle);
+                D.y = A.y + A.r * Math.sin(D.angle);
+
+                // 점 E 좌표
+                E.x = A.x + A.r * Math.cos(E.angle);
+                E.y = A.y + A.r * Math.sin(E.angle);
+
+                // 접선 j의 방향 벡터 (AC 반지름 벡터에 수직)
+                const tangentAngleRight = C.angle - Math.PI / 2; 
+                
+                // 점 F 좌표 (접점 C에서 정확히 오른쪽 방향으로 dist 만큼 떨어진 지점)
+                state.F.x = C.x + state.F.dist * Math.cos(tangentAngleRight);
+                state.F.y = C.y + state.F.dist * Math.sin(tangentAngleRight);
+            }
+
+            // 각도 계산 함수 (세 점 p1, vertex, p2)
+            function calcAngle(p1, vertex, p2) {
+                const v1 = { x: p1.x - vertex.x, y: p1.y - vertex.y };
+                const v2 = { x: p2.x - vertex.x, y: p2.y - vertex.y };
+
+                const dot = v1.x * v2.x + v1.y * v2.y;
+                const mag1 = Math.hypot(v1.x, v1.y);
+                const mag2 = Math.hypot(v2.x, v2.y);
+
+                if (mag1 === 0 || mag2 === 0) return 0;
+
+                let cosTheta = dot / (mag1 * mag2);
+                cosTheta = Math.max(-1, Math.min(1, cosTheta));
+                return Math.acos(cosTheta) * (180 / Math.PI);
+            }
+
+            // 메인 드로잉 함수
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                updatePointCoordinates();
+
+                const { A, C, D, E, F } = state;
+
+                // 1. 접선 j 전체 수평선 그리기
+                const tangentAngleRight = C.angle - Math.PI / 2;
+                const lineLen = Math.max(canvas.width, canvas.height);
+                const lineStart = {
+                    x: C.x - lineLen * Math.cos(tangentAngleRight),
+                    y: C.y - lineLen * Math.sin(tangentAngleRight)
+                };
+                const lineEnd = {
+                    x: C.x + lineLen * Math.cos(tangentAngleRight),
+                    y: C.y + lineLen * Math.sin(tangentAngleRight)
+                };
+
+                ctx.beginPath();
+                ctx.moveTo(lineStart.x, lineStart.y);
+                ctx.lineTo(lineEnd.x, lineEnd.y);
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 접선 라벨 'j' (접선의 왼쪽 끝 부분 표시)
+                ctx.font = 'italic 16px Pretendard, sans-serif';
+                ctx.fillStyle = '#334155';
+                ctx.fillText('j', lineStart.x + 30, lineStart.y - 10);
+
+                // 2. 원 A 그리기
+                ctx.beginPath();
+                ctx.arc(A.x, A.y, A.r, 0, Math.PI * 2);
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // 3. 내접 삼각형 CDE 그리기
+                ctx.beginPath();
+                ctx.moveTo(D.x, D.y);
+                ctx.lineTo(E.x, E.y);
+                ctx.lineTo(C.x, C.y);
+                ctx.closePath();
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // 4. 현 CD 강조
+                ctx.beginPath();
+                ctx.moveTo(C.x, C.y);
+                ctx.lineTo(D.x, D.y);
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // 5. 각도 부채꼴 호 및 색칠 영역 표시 (원주각 DEC & 접현각 DCF)
+                const angleE = calcAngle(D, E, C);
+                const angleC = calcAngle(D, C, F);
+
+                drawAngleArc(E, D, C, '#22c55e', 'rgba(34, 197, 94, 0.25)', angleE);
+                drawAngleArc(C, D, F, '#22c55e', 'rgba(34, 197, 94, 0.25)', angleC);
+
+                // 6. 점 및 라벨 드로잉 (F는 C의 오른쪽에 배치)
+                drawPoint(A, 'A', '#6366f1', 5, false);
+                drawPoint(C, 'C', '#6366f1', 6, false); // 접점 C
+                drawPoint(F, 'F', '#6366f1', 6, false); // C 오른쪽 접선 상의 점 F
+                drawPoint(D, 'D', '#10b981', 8, true);  // 가변 점 D (드래그 가능)
+                drawPoint(E, 'E', '#10b981', 8, true);  // 가변 점 E (드래그 가능)
+
+                // UI 수치 업데이트
+                updateUI(angleE, angleC);
+            }
+
+            // 각도 표시 호(Arc) 및 색칠 드로잉
+            function drawAngleArc(vertex, p1, p2, color, fillColor, angleDeg) {
+                const radius = 38;
+                const a1 = Math.atan2(p1.y - vertex.y, p1.x - vertex.x);
+                const a2 = Math.atan2(p2.y - vertex.y, p2.x - vertex.x);
+
+                let startAngle = a1;
+                let endAngle = a2;
+
+                let diff = endAngle - startAngle;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+
+                ctx.beginPath();
+                ctx.moveTo(vertex.x, vertex.y);
+                ctx.arc(vertex.x, vertex.y, radius, startAngle, startAngle + diff, diff < 0);
+                ctx.closePath();
+                ctx.fillStyle = fillColor;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(vertex.x, vertex.y, radius, startAngle, startAngle + diff, diff < 0);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // 수치 라벨 렌더링
+                if (state.showValue) {
+                    const midAngle = startAngle + diff / 2;
+                    const textX = vertex.x + (radius + 22) * Math.cos(midAngle);
+                    const textY = vertex.y + (radius + 22) * Math.sin(midAngle);
+
+                    ctx.font = 'bold 13px Pretendard, sans-serif';
+                    ctx.fillStyle = '#15803d';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`${angleDeg.toFixed(2)}°`, textX, textY);
+                }
+            }
+
+            // 점 드로잉 함수
+            function drawPoint(pt, label, color, r = 6, isInteractive = false) {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = isInteractive ? '#ffffff' : color;
+                ctx.fill();
+                ctx.lineWidth = isInteractive ? 3 : 2;
+                ctx.strokeStyle = color;
+                ctx.stroke();
+
+                // 라벨 위치 오프셋 조정
+                ctx.font = 'bold 15px Pretendard, sans-serif';
+                ctx.fillStyle = '#1e293b';
+                
+                let offsetX = 12;
+                let offsetY = -8;
+                if (label === 'C') { offsetY = 20; offsetX = -6; }
+                if (label === 'E') { offsetX = -22; offsetY = -6; }
+                if (label === 'F') { offsetY = -12; offsetX = 8; }
+                if (label === 'D') { offsetY = -12; offsetX = 8; }
+
+                ctx.fillText(label, pt.x + offsetX, pt.y + offsetY);
+            }
+
+            // UI 텍스트 업데이트
+            function updateUI(angleE, angleC) {
+                document.getElementById('angleEVal').innerText = `${angleE.toFixed(2)}°`;
+                document.getElementById('angleCVal').innerText = `${angleC.toFixed(2)}°`;
+
+                const diff = Math.abs(angleE - angleC);
+                document.getElementById('diffText').innerHTML = `차이: <b class="text-indigo-800">${diff.toFixed(2)}°</b>`;
+            }
+
+            // 터치/마우스 위치 계산
+            function getCanvasPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
+
+            // 드래그 가능한 점 찾기 (점 E 및 점 D)
+            function findPoint(pos) {
+                const pts = [
+                    { key: 'E', pt: state.E },
+                    { key: 'D', pt: state.D }
+                ];
+                for (let p of pts) {
+                    if (Math.hypot(p.pt.x - pos.x, p.pt.y - pos.y) < 25) {
+                        return p.key;
+                    }
+                }
+                return null;
+            }
+
+            // 드래그 이벤트 핸들러
+            function handleStart(e) {
+                const pos = getCanvasPos(e);
+                state.activePoint = findPoint(pos);
+            }
+
+            function handleMove(e) {
+                if (!state.activePoint) return;
+                e.preventDefault();
+                const pos = getCanvasPos(e);
+
+                if (state.activePoint === 'E') {
+                    // 점 E는 원주 위에서만 이동
+                    let angle = Math.atan2(pos.y - state.A.y, pos.x - state.A.x);
+                    state.E.angle = angle;
+                } else if (state.activePoint === 'D') {
+                    // 점 D는 원주 위에서만 이동
+                    let angle = Math.atan2(pos.y - state.A.y, pos.x - state.A.x);
+                    state.D.angle = angle;
+                }
+
+                draw();
+            }
+
+            function handleEnd() {
+                state.activePoint = null;
+            }
+
+            // 이벤트 바인딩
+            canvas.addEventListener('mousedown', handleStart);
+            canvas.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+
+            canvas.addEventListener('touchstart', handleStart);
+            canvas.addEventListener('touchmove', handleMove);
+            window.addEventListener('touchend', handleEnd);
+
+            // 점 E 자동 이동 애니메이션 루프
+            function animateLoop() {
+                if (!state.isAnimating) return;
+
+                state.E.angle += 0.008;
+                if (state.E.angle > Math.PI * 2) state.E.angle -= Math.PI * 2;
+
+                draw();
+                requestAnimationFrame(animateLoop);
+            }
+
+            // 버튼 인터랙션 이벤트
+            document.getElementById('btnAnimateE').addEventListener('click', () => {
+                state.isAnimating = !state.isAnimating;
+                const icon = document.getElementById('animIcon');
+                const text = document.getElementById('animText');
+
+                if (state.isAnimating) {
+                    icon.className = 'fa-solid fa-pause';
+                    text.innerText = '정지';
+                    animateLoop();
+                } else {
+                    icon.className = 'fa-solid fa-play';
+                    text.innerText = '점 E 자동 이동';
+                }
+            });
+
+            document.getElementById('btnToggleAngles').addEventListener('click', () => {
+                state.showValue = !state.showValue;
+                document.getElementById('toggleText').innerText = state.showValue ? '각도 수치 숨기기' : '각도 수치 보이기';
+                draw();
+            });
+
+            document.getElementById('btnReset').addEventListener('click', () => {
+                state.isAnimating = false;
+                document.getElementById('animIcon').className = 'fa-solid fa-play';
+                document.getElementById('animText').innerText = '점 E 자동 이동';
+
+                state.C.angle = Math.PI / 2;
+                state.D.angle = -Math.PI / 3.2;
+                state.E.angle = Math.PI * 0.92;
+                state.F.dist = 160;
+                state.showValue = true;
+
+                draw();
+            });
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                initGeometry();
+                draw();
+            });
+
+            // 초기 실행
+            resizeCanvas();
+            initGeometry();
+            draw();
+        });
+    </script>
+</body>
+</html>
