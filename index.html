@@ -62,8 +62,8 @@
                     <span class="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 원주각: ∠DEC
                     </span>
-                    <span class="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 접현각: ∠DCF
+                    <span class="flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> 접현각: ∠DCF
                     </span>
                 </div>
                 <div class="text-slate-500 flex items-center gap-2">
@@ -85,7 +85,7 @@
                     <div class="h-3 w-px bg-white/20"></div>
                     <div class="flex items-center gap-1.5 text-amber-300">
                         <i class="fa-solid fa-lightbulb"></i>
-                        <span>점 F는 접점 C의 오른쪽에 고정 위치합니다!</span>
+                        <span>점 D는 점 E의 오른쪽 ~ 접점 C 사이에서만 이동합니다.</span>
                     </div>
                 </div>
             </div>
@@ -102,18 +102,18 @@
                 </h2>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <!-- 원주각 카드 (텍스트 수정: 각 DEC) -->
+                    <!-- 원주각 카드 (초록색) -->
                     <div class="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-center">
                         <div class="text-xs font-bold text-emerald-800 mb-0.5">원주각 (∠DEC)</div>
                         <div id="angleEVal" class="text-2xl font-black text-emerald-600">79.99°</div>
                         <div class="text-[10px] text-emerald-600/80 font-medium mt-1">호 CD에 대한 원주각</div>
                     </div>
 
-                    <!-- 접현각 카드 (텍스트 수정: 각 DCF) -->
-                    <div class="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-center">
-                        <div class="text-xs font-bold text-emerald-800 mb-0.5">접현각 (∠DCF)</div>
-                        <div id="angleCVal" class="text-2xl font-black text-emerald-600">79.99°</div>
-                        <div class="text-[10px] text-emerald-600/80 font-medium mt-1">접선 j와 현 CD 사이 각</div>
+                    <!-- 접현각 카드 (주황색 변경) -->
+                    <div class="p-3 bg-amber-50/80 border border-amber-300/90 rounded-xl text-center">
+                        <div class="text-xs font-bold text-amber-900 mb-0.5">접현각 (∠DCF)</div>
+                        <div id="angleCVal" class="text-2xl font-black text-amber-600">79.99°</div>
+                        <div class="text-[10px] text-amber-700/80 font-medium mt-1">접선 j와 현 CD 사이 각</div>
                     </div>
                 </div>
 
@@ -183,10 +183,17 @@
                 draw();
             }
 
+            // 각도를 0 ~ 2PI 영역으로 정규화하는 헬퍼 함수
+            function normalizeAngle(a) {
+                let res = a % (Math.PI * 2);
+                if (res < 0) res += Math.PI * 2;
+                return res;
+            }
+
             // 기하 도형 요소 상태 정의
             const state = {
                 A: { x: 0, y: 0, r: 120 }, // 원의 중심 A
-                C: { x: 0, y: 0, angle: Math.PI / 2 }, // 접점 C (원 아래쪽)
+                C: { x: 0, y: 0, angle: Math.PI / 2 }, // 접점 C (원 아래쪽: 90도)
                 D: { x: 0, y: 0, angle: -Math.PI / 3.2 }, // 원 위의 점 D (움직임 가능)
                 E: { x: 0, y: 0, angle: Math.PI * 0.92 }, // 원 위의 가변 점 E (움직임 가능)
                 F: { x: 0, y: 0, dist: 160 }, // 접선 j 위의 점 F (C의 오른쪽 위치)
@@ -303,12 +310,14 @@
                 ctx.lineWidth = 3;
                 ctx.stroke();
 
-                // 5. 각도 부채꼴 호 및 색칠 영역 표시 (원주각 DEC & 접현각 DCF)
+                // 5. 각도 부채꼴 호 및 색칠 영역 표시 (원주각 DEC: 초록색 / 접현각 DCF: 주황색)
                 const angleE = calcAngle(D, E, C);
                 const angleC = calcAngle(D, C, F);
 
-                drawAngleArc(E, D, C, '#22c55e', 'rgba(34, 197, 94, 0.25)', angleE);
-                drawAngleArc(C, D, F, '#22c55e', 'rgba(34, 197, 94, 0.25)', angleC);
+                // 원주각 (DEC) - 초록색
+                drawAngleArc(E, D, C, '#22c55e', 'rgba(34, 197, 94, 0.25)', angleE, '#15803d');
+                // 접현각 (DCF) - 주황색 (Amber/Orange)
+                drawAngleArc(C, D, F, '#f59e0b', 'rgba(245, 158, 11, 0.3)', angleC, '#b45309');
 
                 // 6. 점 및 라벨 드로잉 (F는 C의 오른쪽에 배치)
                 drawPoint(A, 'A', '#6366f1', 5, false);
@@ -322,7 +331,7 @@
             }
 
             // 각도 표시 호(Arc) 및 색칠 드로잉
-            function drawAngleArc(vertex, p1, p2, color, fillColor, angleDeg) {
+            function drawAngleArc(vertex, p1, p2, color, fillColor, angleDeg, textColor) {
                 const radius = 38;
                 const a1 = Math.atan2(p1.y - vertex.y, p1.x - vertex.x);
                 const a2 = Math.atan2(p2.y - vertex.y, p2.x - vertex.x);
@@ -354,7 +363,7 @@
                     const textY = vertex.y + (radius + 22) * Math.sin(midAngle);
 
                     ctx.font = 'bold 13px Pretendard, sans-serif';
-                    ctx.fillStyle = '#15803d';
+                    ctx.fillStyle = textColor;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(`${angleDeg.toFixed(2)}°`, textX, textY);
@@ -431,13 +440,33 @@
                 const pos = getCanvasPos(e);
 
                 if (state.activePoint === 'E') {
-                    // 점 E는 원주 위에서만 이동
+                    // 점 E는 원주 위에서 자유롭게 이동
                     let angle = Math.atan2(pos.y - state.A.y, pos.x - state.A.x);
                     state.E.angle = angle;
                 } else if (state.activePoint === 'D') {
-                    // 점 D는 원주 위에서만 이동
-                    let angle = Math.atan2(pos.y - state.A.y, pos.x - state.A.x);
-                    state.D.angle = angle;
+                    // 점 D 이동 제약 조건:
+                    // 점 E의 오른쪽 ~ 점 C(원 하단 접점)의 왼쪽 범위를 벗어나지 않도록 구속
+                    let targetAngle = Math.atan2(pos.y - state.A.y, pos.x - state.A.x);
+                    
+                    // 기준 각도들 (E, D, C) 정규화
+                    let eAng = normalizeAngle(state.E.angle);
+                    let cAng = normalizeAngle(state.C.angle); // PI / 2 (1.57rad)
+                    let dAng = normalizeAngle(targetAngle);
+
+                    // E에서 시계 방향으로 C까지 이동하는 각도 구간 검증
+                    let diffTotal = normalizeAngle(cAng - eAng);
+                    let diffTarget = normalizeAngle(dAng - eAng);
+
+                    // 마진(여백) 0.15rad (약 8.5도) 지정하여 점들과 직접 포개어지지 않도록 조정
+                    const margin = 0.15;
+
+                    if (diffTarget < margin) {
+                        dAng = normalizeAngle(eAng + margin);
+                    } else if (diffTarget > diffTotal - margin) {
+                        dAng = normalizeAngle(cAng - margin);
+                    }
+
+                    state.D.angle = dAng;
                 }
 
                 draw();
